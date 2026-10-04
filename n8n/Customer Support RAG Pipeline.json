@@ -1,0 +1,445 @@
+{
+    "name": "Customer Support RAG Pipeline",
+    "nodes": [
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/bookings?passenger_id=eq.{{ $json.body.passenger_id }}&status=eq.CONFIRMED&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                176,
+                112
+            ],
+            "id": "66329201-5991-45b0-acc2-92f56f8fb021",
+            "name": "Get Passenger Booking",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/passengers?id=eq.{{ $('Support Ticket Webhook').item.json.body.passenger_id }}&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                352,
+                0
+            ],
+            "id": "62b9948d-ba23-40e4-81b3-485516726f25",
+            "name": "Get Passenger Details",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://127.0.0.1:11434/api/embeddings",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"nomic-embed-text\",\n  \"prompt\": \"{{ $('Support Ticket Webhook').item.json.body.question }}\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                576,
+                96
+            ],
+            "id": "923f7582-3111-4ab6-9614-17a3fc9eb83b",
+            "name": "Embed Question"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://flight-policy-qbm03jr.svc.aped-4627-b74a.pinecone.io/query",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Api-Key",
+                            "value": "pcsk_4VZM89_6XmftZDdXKNvczm2PmoYQAyAFmvrSxB5V5UrXfzdoMv7H8HQueAqMb3ayMZGtND"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"vector\": {{ JSON.stringify($json.embedding) }},\n  \"topK\": 3,\n  \"includeMetadata\": true,\n  \"namespace\": \"\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                800,
+                0
+            ],
+            "id": "cba70cec-1121-4aac-bc73-9ef2a0b71619",
+            "name": "Query Pinecone"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get passenger question from webhook\nconst question = $('Support Ticket Webhook').item.json.body.question;\n\n// Get passenger booking fare type\n// CRITICAL: use actual fare type not generic\nconst bookings = $('Get Passenger Booking').all();\nconst fareType = bookings.length > 0 \n  ? bookings[0].json.fare_type \n  : 'UNKNOWN';\n\n// Get passenger name\nconst passengers = $('Get Passenger Details').all();\nconst passengerName = passengers.length > 0\n  ? `${passengers[0].json.first_name} ${passengers[0].json.last_name}`\n  : 'Passenger';\n\n// Get relevant policy chunks from Pinecone\nconst matches = $json.matches || [];\nconst policyChunks = matches\n  .map(m => m.metadata?.text || '')\n  .filter(t => t.length > 0)\n  .join('\\n\\n');\n\n// Build fare-aware prompt\n// CRITICAL: inject actual fare type so AI responds\n// based on passenger real rules not generic policy\nconst prompt = `You are a helpful airline customer support agent.\n\nPASSENGER INFORMATION:\nName: ${passengerName}\nFare Type: ${fareType}\n\nRELEVANT POLICY INFORMATION:\n${policyChunks}\n\nIMPORTANT: Your response must be specific to the passenger's \n${fareType} fare type. Do not give generic answers.\nFor example:\n- BASIC_ECONOMY passengers cannot change dates or get refunds\n- FLEXIBLE passengers can change dates for free\n- BUSINESS_CLASS passengers have unlimited free changes\n\nCUSTOMER QUESTION:\n${question}\n\nPlease provide a helpful, accurate response based on the \npassenger's actual ${fareType} fare rules.`;\n\nreturn [{\n  json: {\n    prompt,\n    question,\n    fareType,\n    passengerName\n  }\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1024,
+                96
+            ],
+            "id": "094e49a9-e792-44a8-911a-b9c31a012a2f",
+            "name": "Build Fare Aware Prompt"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://127.0.0.1:11434/api/generate",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\"model\": \"llama3.2\", \"prompt\": {{ JSON.stringify($('Build Fare Aware Prompt').item.json.prompt) }}, \"stream\": false}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                1232,
+                16
+            ],
+            "id": "6957bdf7-a94a-4403-a188-d2483dda1382",
+            "name": "Generate AI Response"
+        },
+        {
+            "parameters": {
+                "fromEmail": "arqamsunny18@gmail.com",
+                "toEmail": "arqamsunny18@gmail.com",
+                "subject": "[APPROVAL NEEDED] Customer Support Draft Response",
+                "emailFormat": "=html",
+                "html": "=A customer support question requires your approval \nbefore sending.\n\nPASSENGER: {{ $('Build Fare Aware Prompt').item.json.passengerName }}\nFARE TYPE: {{ $('Build Fare Aware Prompt').item.json.fareType }}\n\nCUSTOMER QUESTION:\n{{ $('Build Fare Aware Prompt').item.json.question }}\n\nAI DRAFT RESPONSE:\n{{ $('Generate AI Response').item.json.response }}\n\n---\nTo APPROVE this response, click here:\n{{ $execution.resumeUrl }}&decision=approved\n\nTo REJECT this response, click here:\n{{ $execution.resumeUrl }}&decision=rejected",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                1456,
+                16
+            ],
+            "id": "05c31891-d2c9-4163-8d9c-6713cc91f078",
+            "name": "Send for Human Approval",
+            "webhookId": "fe0ae6f8-e5f4-4171-ad79-64126c13cc9c",
+            "credentials": {
+                "smtp": {
+                    "id": "tMIJL8UPCSgf2VDj",
+                    "name": "SMTP account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resume": "webhook",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1.1,
+            "position": [
+                1664,
+                80
+            ],
+            "id": "49685587-e2d0-4218-bbad-f57b93fbe358",
+            "name": "Wait for Approval",
+            "webhookId": "751bf980-afb5-4f4f-8d8b-fb00a53d1496"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "10963621-e512-4365-a1c5-7ea7298eaa13",
+                            "leftValue": "={{ $json.query.decision }}",
+                            "rightValue": "approved",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals",
+                                "name": "filter.operator.equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                1888,
+                16
+            ],
+            "id": "02e8d187-c1d3-45ac-bd50-0aa93d30a0e8",
+            "name": "Approved?"
+        },
+        {
+            "parameters": {
+                "fromEmail": " arqamsunny18@gmail.com",
+                "toEmail": "={{ $('Get Passenger Details').item.json.email }}",
+                "subject": "Response to Your Support Question",
+                "html": "=Hi {{ $('Get Passenger Details').item.json.first_name }},\n\nThank you for contacting SkyLine Airlines support.\n\nYour Question:\n{{ $('Support Ticket Webhook').item.json.body.question }}\n\nOur Response:\n{{ $('Generate AI Response').item.json.response }}\n\nIf you have any further questions please don't \nhesitate to contact us.\n\nBest regards,\nSkyLine Airlines Customer Support",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                2208,
+                -96
+            ],
+            "id": "a3c87e76-9a59-4e9f-b222-086c1f9ede27",
+            "name": "Send Response to Customer",
+            "webhookId": "c2e3a223-3433-46b2-95dc-64292206888f",
+            "credentials": {
+                "smtp": {
+                    "id": "tMIJL8UPCSgf2VDj",
+                    "name": "SMTP account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": " https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/audit_logs",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=representation"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"entity_name\": \"passengers\",\n  \"entity_id\": \"{{ $('Get Passenger Details').item.json.id }}\",\n  \"action\": \"RAG_RESPONSE_REJECTED\",\n  \"changed_by\": \"ops_team\",\n  \"new_data\": {\n    \"question\": \"{{ $('Support Ticket Webhook').item.json.body.question }}\",\n    \"fare_type\": \"{{ $('Get Passenger Booking').item.json.fare_type }}\",\n    \"rejected_at\": \"{{ $now.toISO() }}\"\n  }\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                2208,
+                96
+            ],
+            "id": "2198db01-29f6-4e31-912c-b221cefc87f7",
+            "name": "Log Rejection to Audit"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "customer-support",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                0,
+                0
+            ],
+            "id": "05ea0926-f9eb-4864-8e30-6b1777843eb4",
+            "name": "Support Ticket Webhook",
+            "webhookId": "0704d470-02b7-4393-9e99-3cba1c929275"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Get Passenger Booking": {
+            "main": [
+                [
+                    {
+                        "node": "Get Passenger Details",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Passenger Details": {
+            "main": [
+                [
+                    {
+                        "node": "Embed Question",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Embed Question": {
+            "main": [
+                [
+                    {
+                        "node": "Query Pinecone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Query Pinecone": {
+            "main": [
+                [
+                    {
+                        "node": "Build Fare Aware Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Fare Aware Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Generate AI Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate AI Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send for Human Approval",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send for Human Approval": {
+            "main": [
+                [
+                    {
+                        "node": "Wait for Approval",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait for Approval": {
+            "main": [
+                [
+                    {
+                        "node": "Approved?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Approved?": {
+            "main": [
+                [
+                    {
+                        "node": "Send Response to Customer",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Log Rejection to Audit",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Support Ticket Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Get Passenger Booking",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "366bf37c-419d-4bc0-8e2d-d7aa81e3bd36",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "7a20cbd8efb56b83894fbb864c48d3bee502244051bfe287217ad3175807ae83"
+    },
+    "nodeGroups": [],
+    "id": "wtt7gygRLn8tkOp0",
+    "tags": []
+}

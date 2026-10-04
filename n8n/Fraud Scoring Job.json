@@ -1,0 +1,308 @@
+{
+    "name": "Fraud Scoring Job",
+    "nodes": [
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/bookings?status=eq.CONFIRMED&created_at=gte.{{ $now.minus(86400000).toISO() }}&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                224,
+                0
+            ],
+            "id": "fe7417e5-5840-445a-bab9-d917417cf25d",
+            "name": "Get Recent Bookings",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/flights?id=eq.{{ $json.flight_id }}&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                448,
+                0
+            ],
+            "id": "e9459c0b-e251-4df5-b5f6-6c1bca6e6502",
+            "name": "Get Flight Details"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get all flight items from this node's input\nconst items = $input.all();\n\n// Get booking data from earlier node\nconst bookings = $('Get Recent Bookings').all();\n\n// Build enriched list combining booking + flight data\nconst enriched = items.map(item => {\n  const flight = item.json;\n  \n  const booking = bookings.find(\n    b => b.json.flight_id === flight.id\n  );\n\n  return {\n    booking_id: booking?.json.id,\n    passenger_id: booking?.json.passenger_id,\n    flight_id: flight.id,\n    flight_number: flight.flight_number,\n    departure_time: flight.departure_time,\n    arrival_time: flight.arrival_time,\n  };\n});\n\n// Group by passenger_id\nconst byPassenger = {};\nfor (const entry of enriched) {\n  const pid = entry.passenger_id;\n  if (!byPassenger[pid]) byPassenger[pid] = [];\n  byPassenger[pid].push(entry);\n}\n\n// Find passengers with overlapping flights\nconst fraudCases = [];\n\nfor (const [passenger_id, flights] of Object.entries(byPassenger)) {\n  if (flights.length < 2) continue;\n\n  for (let i = 0; i < flights.length; i++) {\n    for (let j = i + 1; j < flights.length; j++) {\n      const a = flights[i];\n      const b = flights[j];\n\n      const depA = new Date(a.departure_time);\n      const arrA = new Date(a.arrival_time);\n      const depB = new Date(b.departure_time);\n      const arrB = new Date(b.arrival_time);\n\n      // Overlap = one departs before the other arrives\n      const overlaps = depA < arrB && depB < arrA;\n\n      if (overlaps) {\n        fraudCases.push({\n          passenger_id,\n          booking_1: a.booking_id,\n          flight_1: a.flight_number,\n          departure_1: a.departure_time,\n          arrival_1: a.arrival_time,\n          booking_2: b.booking_id,\n          flight_2: b.flight_number,\n          departure_2: b.departure_time,\n          arrival_2: b.arrival_time,\n        });\n      }\n    }\n  }\n}\n\n// If no fraud cases return a flag\nif (fraudCases.length === 0) {\n  return [{ json: { fraud_found: false } }];\n}\n\n// Return each fraud case as separate item\nreturn fraudCases.map(c => ({ json: { fraud_found: true, ...c } }));"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                672,
+                0
+            ],
+            "id": "b185e0e6-0d82-4092-b370-a01f99f7b47e",
+            "name": "Detect Overlapping Bookings"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "cb8b7e50-258c-4ddc-9a19-28f81717887f",
+                            "leftValue": "={{ $json.fraud_found }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                896,
+                0
+            ],
+            "id": "cb606318-0c89-400d-ab9a-250d1defb407",
+            "name": "Fraud Found?"
+        },
+        {
+            "parameters": {
+                "fromEmail": "arqamsunny18@gmail.com",
+                "toEmail": "arqamsunny18@gmail.com",
+                "subject": "=🚨 Fraud Alert - Overlapping Bookings Detected for Passenger {{ $json.passenger_id }}",
+                "html": "=FRAUD ALERT - Overlapping Bookings Detected\n\nPassenger ID: {{ $json.passenger_id }}\n\nBooking 1:\n  Booking ID:  {{ $json.booking_1 }}\n  Flight:      {{ $json.flight_1 }}\n  Departure:   {{ $json.departure_1 }}\n  Arrival:     {{ $json.arrival_1 }}\n\nBooking 2:\n  Booking ID:  {{ $json.booking_2 }}\n  Flight:      {{ $json.flight_2 }}\n  Departure:   {{ $json.departure_2 }}\n  Arrival:     {{ $json.arrival_2 }}\n\nPlease review and take action immediately.\n\n— Fraud Scoring Job",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                1120,
+                -96
+            ],
+            "id": "f973fcb5-4311-46c8-8b11-d102646fe932",
+            "name": "Send Fraud Alert Email",
+            "webhookId": "fae0720a-93a2-4ca5-b090-e3541039b018",
+            "credentials": {
+                "smtp": {
+                    "id": "tMIJL8UPCSgf2VDj",
+                    "name": "SMTP account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/audit_logs",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=representation"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"entity_name\": \"bookings\",\n  \"entity_id\": \"{{ $('Detect Overlapping Bookings').item.json.booking_1 }}\",\n  \"action\": \"FRAUD_DETECTED\",\n  \"old_data\": {},\n  \"new_data\": {\n    \"passenger_id\": \"{{ $('Detect Overlapping Bookings').item.json.passenger_id }}\",\n    \"booking_1\": \"{{ $('Detect Overlapping Bookings').item.json.booking_1 }}\",\n    \"booking_2\": \"{{ $('Detect Overlapping Bookings').item.json.booking_2 }}\",\n    \"flight_1\": \"{{ $('Detect Overlapping Bookings').item.json.flight_1 }}\",\n    \"flight_2\": \"{{ $('Detect Overlapping Bookings').item.json.flight_2 }}\"\n  },\n  \"changed_by\": \"fraud_scoring_job\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                1344,
+                -96
+            ],
+            "id": "a385969f-581a-4598-baad-fae40ed3bbd1",
+            "name": "Log Fraud to Audit"
+        },
+        {
+            "parameters": {},
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                1120,
+                96
+            ],
+            "id": "d5cabe57-4760-469b-a0bc-e8f46d548d70",
+            "name": "No Fraud Found"
+        },
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {}
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.4,
+            "position": [
+                0,
+                0
+            ],
+            "id": "6caee07c-158e-4a80-8cf7-9a0ae0c4b31f",
+            "name": "Every 24 Hours"
+        }
+    ],
+    "pinData": {
+        "Every 24 Hours": [
+            {
+                "json": {
+                    "timestamp": "2026-09-29T08:27:53.808-04:00",
+                    "Readable date": "September 29th 2026, 8:27:53 am",
+                    "Readable time": "8:27:53 am",
+                    "Day of week": "Tuesday",
+                    "Year": "2026",
+                    "Month": "September",
+                    "Day of month": "29",
+                    "Hour": "08",
+                    "Minute": "27",
+                    "Second": "53",
+                    "Timezone": "America/New_York (UTC-04:00)"
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "connections": {
+        "Get Recent Bookings": {
+            "main": [
+                [
+                    {
+                        "node": "Get Flight Details",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Flight Details": {
+            "main": [
+                [
+                    {
+                        "node": "Detect Overlapping Bookings",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Detect Overlapping Bookings": {
+            "main": [
+                [
+                    {
+                        "node": "Fraud Found?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fraud Found?": {
+            "main": [
+                [
+                    {
+                        "node": "Send Fraud Alert Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "No Fraud Found",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Fraud Alert Email": {
+            "main": [
+                [
+                    {
+                        "node": "Log Fraud to Audit",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Every 24 Hours": {
+            "main": [
+                [
+                    {
+                        "node": "Get Recent Bookings",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "977cd57e-93f1-4461-8321-238b23b53977",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "7a20cbd8efb56b83894fbb864c48d3bee502244051bfe287217ad3175807ae83"
+    },
+    "nodeGroups": [],
+    "id": "3lA7G6HeV6DmEkMD",
+    "tags": []
+}

@@ -1,0 +1,189 @@
+{
+    "name": "Check-in Reminder Notifications",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.4,
+            "position": [
+                0,
+                0
+            ],
+            "id": "4d172332-dd55-4597-9adb-e9b3a5c25276",
+            "name": "Schedule Trigger Every 1 Hr"
+        },
+        {
+            "parameters": {
+                "url": "= https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/flights?departure_time=gte.{{ $now.toISO() }}&departure_time=lte.{{ $now.plus(86400000).toISO() }}&status=neq.CANCELLED&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                224,
+                0
+            ],
+            "id": "746a62b1-524b-4f9f-b1c4-c1d18ad6dc56",
+            "name": "Get Flights Departing in 24 Hours"
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/bookings?flight_id=eq.{{ $json.id }}&status=eq.CONFIRMED&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Autherization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                448,
+                0
+            ],
+            "id": "7b58eca2-c66d-47a6-acf8-fef9df834760",
+            "name": "Get Confirmed Bookings"
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/passengers?id=eq.{{ $json.passenger_id }}&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                672,
+                0
+            ],
+            "id": "e90495a2-17f7-40f8-959e-5e45bf5c378e",
+            "name": "Get Passenger Details"
+        },
+        {
+            "parameters": {
+                "fromEmail": "arqamsunny18@gmail.com",
+                "toEmail": "= {{ $('Get Passenger Details').item.json.email }}",
+                "subject": "  Reminder: Your flight departs in 24 hours!",
+                "html": "=Hi {{ $('Get Passenger Details').item.json.first_name }},\n\nThis is a friendly reminder that your flight \ndeparts in 24 hours!\n\nFlight:     {{ $('Get Flights Departing in 24 Hours').item.json.flight_number }}\nRoute:      {{ $('Get Flights Departing in 24 Hours').item.json.origin }} to {{ $('Get Flights Departing in 24 Hours').item.json.destination }}\nDeparture:  {{ $('Get Flights Departing in 24 Hours').item.json.departure_time }}\n\nPlease check in online before arriving at the airport.\n\nHave a great flight!",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                896,
+                0
+            ],
+            "id": "3996d2c3-9385-4cbb-aa30-1ad1f738dee4",
+            "name": "Send Checkin Reminder",
+            "webhookId": "2289bb85-cfec-4255-b93e-5a5816b17b61",
+            "credentials": {
+                "smtp": {
+                    "id": "tMIJL8UPCSgf2VDj",
+                    "name": "SMTP account"
+                }
+            }
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Schedule Trigger Every 1 Hr": {
+            "main": [
+                [
+                    {
+                        "node": "Get Flights Departing in 24 Hours",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Flights Departing in 24 Hours": {
+            "main": [
+                [
+                    {
+                        "node": "Get Confirmed Bookings",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Confirmed Bookings": {
+            "main": [
+                [
+                    {
+                        "node": "Get Passenger Details",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Passenger Details": {
+            "main": [
+                [
+                    {
+                        "node": "Send Checkin Reminder",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "d50f8c6d-4603-44e4-8289-4fc80f561164",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "7a20cbd8efb56b83894fbb864c48d3bee502244051bfe287217ad3175807ae83"
+    },
+    "nodeGroups": [],
+    "id": "y1p3yXv6UobWyr82",
+    "tags": []
+}

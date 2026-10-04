@@ -1,0 +1,186 @@
+{
+    "name": "Policy Doc Ingestion Pipeline",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {}
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.4,
+            "position": [
+                0,
+                0
+            ],
+            "id": "f2b8f7ff-c9e9-4cd0-9a42-fea0f3b64929",
+            "name": "Every 24 Hours"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Airline policy documents split into chunks\n// Each chunk will be embedded separately into Pinecone\n\nconst policies = [\n  {\n    id: \"policy-1\",\n    text: \"BASIC_ECONOMY fare rules: No changes allowed after booking. No date changes. No route changes. No seat selection. No refunds. Boarding is last priority. Baggage: 1 personal item only, no carry-on included.\"\n  },\n  {\n    id: \"policy-2\", \n    text: \"FLEXIBLE fare rules: Free date changes allowed up to 2 hours before departure. Free route changes allowed. Seat selection included at no extra cost. Full refund available up to 24 hours before departure. Priority boarding included.\"\n  },\n  {\n    id: \"policy-3\",\n    text: \"BUSINESS_CLASS fare rules: Unlimited free changes. Full refund anytime. Premium seat selection. First boarding group. 2 checked bags included. Lounge access included.\"\n  },\n  {\n    id: \"policy-4\",\n    text: \"Waitlist policy: Passengers are added to waitlist when flight class is full. Priority is determined by loyalty tier first, then fare class, then booking time. GOLD loyalty tier gets highest priority. SILVER gets second priority. STANDARD gets lowest priority.\"\n  },\n  {\n    id: \"policy-5\",\n    text: \"Refund policy: Refund requests are processed within 3 business days. If refund is not processed within 3 days it is escalated to senior ops team. Refunds go back to original payment method. Travel credits expire after 12 months.\"\n  },\n  {\n    id: \"policy-6\",\n    text: \"Check-in policy: Online check-in opens 24 hours before departure. Passengers must check in at least 1 hour before departure. Failure to check in results in seat being released to standby passengers.\"\n  },\n  {\n    id: \"policy-7\",\n    text: \"Overbooking policy: Flights may be overbooked by up to 10 percent of capacity. Volunteers who give up seats receive travel credit worth 200 percent of ticket value. Involuntary denied boarding receives cash compensation per regulations.\"\n  },\n  {\n    id: \"policy-8\",\n    text: \"Fraud policy: Passengers found with overlapping bookings on same time window will have duplicate bookings cancelled. First booking is kept. Repeat violations result in account suspension. Refunds are not provided for cancelled fraud bookings.\"\n  }\n];\n\n// Return each policy as a separate item\nreturn policies.map(p => ({ json: p }));"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                224,
+                0
+            ],
+            "id": "54fcb791-9acc-45c9-8cd8-7c4d6e8f4718",
+            "name": "Policy Documents"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://127.0.0.1:11434/api/embeddings",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"nomic-embed-text\",\n  \"prompt\": \"{{ $json.text }}\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                448,
+                0
+            ],
+            "id": "bc0ccf99-8df6-4a8d-891c-a0a88318eebe",
+            "name": "Generate Embeddings"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://flight-policy-qbm03jr.svc.aped-4627-b74a.pinecone.io/vectors/upsert",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Api-Key",
+                            "value": "pcsk_4VZM89_6XmftZDdXKNvczm2PmoYQAyAFmvrSxB5V5UrXfzdoMv7H8HQueAqMb3ayMZGtND"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ $json.body }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                896,
+                0
+            ],
+            "id": "e6673ecc-ba7f-45a8-b6c0-559ea7a4d43f",
+            "name": "Upsert to Pinecone"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get all items passed into this node\nconst embeddingItems = $input.all();\n\n// Get all policy docs from earlier node\nconst policyItems = $('Policy Documents').all();\n\n// Process each item separately\nconst results = [];\n\nfor (let i = 0; i < embeddingItems.length; i++) {\n  const embedding = embeddingItems[i].json.embedding;\n  const policyId = policyItems[i].json.id;\n  const policyText = policyItems[i].json.text;\n\n  results.push({\n    json: {\n      body: JSON.stringify({\n        vectors: [\n          {\n            id: policyId,\n            values: embedding,\n            metadata: {\n              text: policyText,\n              id: policyId\n            }\n          }\n        ],\n        namespace: \"\"\n      })\n    }\n  });\n}\n\nreturn results;"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                672,
+                0
+            ],
+            "id": "c5b9f2c7-0c72-4aaa-a179-592bf7514011",
+            "name": "Format Pinecone Body"
+        }
+    ],
+    "pinData": {
+        "Every 24 Hours": [
+            {
+                "json": {
+                    "timestamp": "2026-09-30T02:31:13.040-04:00",
+                    "Readable date": "September 30th 2026, 2:31:13 am",
+                    "Readable time": "2:31:13 am",
+                    "Day of week": "Wednesday",
+                    "Year": "2026",
+                    "Month": "September",
+                    "Day of month": "30",
+                    "Hour": "02",
+                    "Minute": "31",
+                    "Second": "13",
+                    "Timezone": "America/New_York (UTC-04:00)"
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "connections": {
+        "Every 24 Hours": {
+            "main": [
+                [
+                    {
+                        "node": "Policy Documents",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Policy Documents": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Embeddings",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Embeddings": {
+            "main": [
+                [
+                    {
+                        "node": "Format Pinecone Body",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Pinecone Body": {
+            "main": [
+                [
+                    {
+                        "node": "Upsert to Pinecone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "d0a4038f-d810-4baf-980b-a31e23ed5ac6",
+    "meta": {
+        "instanceId": "7a20cbd8efb56b83894fbb864c48d3bee502244051bfe287217ad3175807ae83"
+    },
+    "nodeGroups": [],
+    "id": "XIBiv37hYSo02l0i",
+    "tags": []
+}

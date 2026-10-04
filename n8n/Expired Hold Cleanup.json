@@ -1,0 +1,354 @@
+{
+    "name": "Expired Hold Cleanup",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 15
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.4,
+            "position": [
+                0,
+                0
+            ],
+            "id": "fbcbf494-58c6-43a6-b4b7-b52843f47fb7",
+            "name": "Every 15 Minutes"
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/bookings?status=eq.HOLD&hold_expires_at=lte.{{ $now.toISO() }}&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                192,
+                16
+            ],
+            "id": "c3014a1c-bbfb-44d2-9bc4-6680f04e2bd8",
+            "name": "Get Expired Holds",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "9a247e64-5fe8-4861-be56-1e10c67473a8",
+                            "leftValue": "={{ $json.id }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                416,
+                16
+            ],
+            "id": "8994f42c-1a75-47be-be35-8d15e698edd9",
+            "name": "Has Expired Holds?"
+        },
+        {
+            "parameters": {
+                "method": "PATCH",
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/bookings?id=eq.{{ $json.id }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=representation"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "{\n  \"status\": \"CANCELLED\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                640,
+                -80
+            ],
+            "id": "fed7f934-415d-42c1-b551-d9fd86919b1f",
+            "name": "Cancel Expired Hold"
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/flight_seat_classes?flight_id=eq.{{ $('Get Expired Holds').item.json.flight_id }}&fare_type=eq.{{ $('Get Expired Holds').item.json.fare_type }}&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                864,
+                -80
+            ],
+            "id": "2beb1ebd-1a08-43c8-8c0a-4afa5d023efb",
+            "name": "Get Seat Inventory"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Get current held seats value\nconst currentHeldSeats = $('Get Seat Inventory').item.json.held_seats;\n\n// Decrement by 1 but never go below 0\nconst newHeldSeats = Math.max(0, currentHeldSeats - 1);\n\n// Pass through all data needed for next nodes\nreturn [{\n  json: {\n    new_held_seats: newHeldSeats,\n    flight_id: $('Get Expired Holds').item.json.flight_id,\n    fare_type: $('Get Expired Holds').item.json.fare_type,\n    booking_id: $('Get Expired Holds').item.json.id,\n    passenger_id: $('Get Expired Holds').item.json.passenger_id\n  }\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1088,
+                -80
+            ],
+            "id": "2e45ddde-eb51-4e74-b103-46bff3f9ac61",
+            "name": "Calculate New Held Seats"
+        },
+        {
+            "parameters": {
+                "method": "PATCH",
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/flight_seat_classes?flight_id=eq.{{ $json.flight_id }}&fare_type=eq.{{ $json.fare_type }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=representation"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"held_seats\": {{ $json.new_held_seats }}\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                1312,
+                -80
+            ],
+            "id": "ebd5c856-edbb-45b4-8e96-29c5a3848023",
+            "name": "Update Seat Inventory"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/audit_logs",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=representation"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"entity_name\": \"bookings\",\n  \"entity_id\": \"{{ $('Calculate New Held Seats').item.json.booking_id }}\",\n  \"action\": \"HOLD_EXPIRED\",\n  \"old_data\": { \"status\": \"HOLD\" },\n  \"new_data\": {\n    \"status\": \"CANCELLED\",\n    \"flight_id\": \"{{ $('Calculate New Held Seats').item.json.flight_id }}\",\n    \"fare_type\": \"{{ $('Calculate New Held Seats').item.json.fare_type }}\",\n    \"expired_at\": \"{{ $now.toISO() }}\"\n  },\n  \"changed_by\": \"n8n-automation\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                1536,
+                -80
+            ],
+            "id": "f744f11b-1899-4ee9-8b4e-83e59a308f49",
+            "name": "Log Hold Expiry to Audit"
+        },
+        {
+            "parameters": {},
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                640,
+                112
+            ],
+            "id": "cdc2d705-bde4-432c-b201-a617d9a6cd65",
+            "name": "Nothing To Clean"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Every 15 Minutes": {
+            "main": [
+                [
+                    {
+                        "node": "Get Expired Holds",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Expired Holds": {
+            "main": [
+                [
+                    {
+                        "node": "Has Expired Holds?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Expired Holds?": {
+            "main": [
+                [
+                    {
+                        "node": "Cancel Expired Hold",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Nothing To Clean",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Cancel Expired Hold": {
+            "main": [
+                [
+                    {
+                        "node": "Get Seat Inventory",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Seat Inventory": {
+            "main": [
+                [
+                    {
+                        "node": "Calculate New Held Seats",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Calculate New Held Seats": {
+            "main": [
+                [
+                    {
+                        "node": "Update Seat Inventory",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Seat Inventory": {
+            "main": [
+                [
+                    {
+                        "node": "Log Hold Expiry to Audit",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "19829280-9906-4948-be25-39aeae85a0a8",
+    "meta": {
+        "instanceId": "7a20cbd8efb56b83894fbb864c48d3bee502244051bfe287217ad3175807ae83"
+    },
+    "nodeGroups": [],
+    "id": "vOiWQa7IDGhnC9fg",
+    "tags": []
+}

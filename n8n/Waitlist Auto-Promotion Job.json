@@ -1,0 +1,303 @@
+{
+    "name": "Waitlist Auto-Promotion Job",
+    "nodes": [
+        {
+            "parameters": {
+                "url": "https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/waitlists?status=eq.WAITING&order=priority_score.desc,created_at.asc&limit=1",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                224,
+                0
+            ],
+            "id": "8f9661f8-b4e8-4d55-94e1-7bb7c2428785",
+            "name": "Get top candidate from waitlist.",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.4,
+            "position": [
+                0,
+                0
+            ],
+            "id": "48719a8a-6aac-4d9f-9127-dfd97319c1e9",
+            "name": "Schedule Trigger Every 5 Min"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "122ff022-25fa-4451-bb85-59c83f65aee2",
+                            "leftValue": "={{ $json.id }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                448,
+                0
+            ],
+            "id": "5742170d-b1bb-4010-9ab3-561578bbc77d",
+            "name": "If Has Candidate"
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/passengers?id=eq.{{ $('Get top candidate from waitlist.').item.json.passenger_id }}&select=first_name,last_name,email",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                672,
+                -96
+            ],
+            "id": "8b02b75a-ee7b-4d76-9eaf-7b539e96eb00",
+            "name": "Get Passangers Detail"
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/flights?id=eq.{{ $('Get top candidate from waitlist.').item.json.flight_id }}&select=flight_number,origin,destination,departure_time",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                896,
+                -96
+            ],
+            "id": "4b95f3b7-97d4-4b99-84aa-4ea9fcbd4dcf",
+            "name": "Get Flight Details"
+        },
+        {
+            "parameters": {
+                "method": "PATCH",
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/waitlists?id=eq.{{ $('Get top candidate from waitlist.').item.json.id }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=representation"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"status\": \"PROMOTED\",\n  \"promoted_at\": \"{{ $now.toISO() }}\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                1120,
+                -96
+            ],
+            "id": "c7e952a6-1fe4-4e2b-b17f-75d46d586392",
+            "name": "Promote waitlist entry"
+        },
+        {
+            "parameters": {
+                "fromEmail": "aqamsunny18@gmail.com",
+                "toEmail": "={{ $('Get Passangers Detail').item.json.email }}",
+                "subject": "You have been promoted from the waitlist!",
+                "html": "=Hi {{ $('Get Passangers Detail').item.json.first_name }},\n\nGreat news! A seat has opened up and you have been \npromoted from the waitlist for your flight.\n\nFlight:     {{ $('Get Flight Details').item.json.flight_number }}\nRoute:      {{ $('Get Flight Details').item.json.origin }} to {{ $('Get Flight Details').item.json.destination }}\nDeparture:  {{ $('Get Flight Details').item.json.departure_time }}\nClass:      {{ $('Get top candidate from waitlist.').item.json.fare_type }}\n\nPlease log in and complete your booking within 24 hours \nor your spot will be released.",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                1344,
+                -96
+            ],
+            "id": "7513a270-6585-4e73-8d38-fcd5c0ba61e4",
+            "name": "Send an Email",
+            "webhookId": "dd73a6e9-2ef4-43ae-80ca-65a959915e6f",
+            "credentials": {
+                "smtp": {
+                    "id": "tMIJL8UPCSgf2VDj",
+                    "name": "SMTP account"
+                }
+            }
+        },
+        {
+            "parameters": {},
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                672,
+                96
+            ],
+            "id": "3b0dcb51-457e-4886-8fff-dd4edc87c477",
+            "name": "Nothing To Promote"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Get top candidate from waitlist.": {
+            "main": [
+                [
+                    {
+                        "node": "If Has Candidate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Schedule Trigger Every 5 Min": {
+            "main": [
+                [
+                    {
+                        "node": "Get top candidate from waitlist.",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If Has Candidate": {
+            "main": [
+                [
+                    {
+                        "node": "Get Passangers Detail",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Nothing To Promote",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Passangers Detail": {
+            "main": [
+                [
+                    {
+                        "node": "Get Flight Details",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Flight Details": {
+            "main": [
+                [
+                    {
+                        "node": "Promote waitlist entry",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Promote waitlist entry": {
+            "main": [
+                [
+                    {
+                        "node": "Send an Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "7358caed-1980-4071-96c4-933bfd0004ce",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "7a20cbd8efb56b83894fbb864c48d3bee502244051bfe287217ad3175807ae83"
+    },
+    "nodeGroups": [],
+    "id": "vSHJfxKrKKx3sJ1j",
+    "tags": []
+}

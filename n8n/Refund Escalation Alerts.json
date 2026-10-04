@@ -1,0 +1,151 @@
+{
+    "name": "Refund Escalation Alerts",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.4,
+            "position": [
+                0,
+                0
+            ],
+            "id": "13fc2c7b-b009-4949-8d53-3fcccadcd20e",
+            "name": "Every 1 Hour"
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/bookings?refund_status=eq.PENDING&refund_updated_at=lte.{{ $now.minus(259200000).toISO() }}&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                224,
+                0
+            ],
+            "id": "fa3a5a42-dcd5-4a8a-855f-5899ef117057",
+            "name": "Get Pending Refunds"
+        },
+        {
+            "parameters": {
+                "url": "=https://croajqrwozhrmiikgwvp.supabase.co/rest/v1/passengers?id=eq.{{ $json.passenger_id }}&select=*",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyb2FqcXJ3b3pocm1paWtnd3ZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2OTE1MywiZXhwIjoyMTA2MTQ1MTUzfQ.eVLVxll83_XTmbDlxn8V9zyhgKHIcWlH9JYsSoThXzo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.5,
+            "position": [
+                448,
+                0
+            ],
+            "id": "fb7dd7a2-c822-4a78-b159-03cb7c7cd59b",
+            "name": "Get Passenger Details"
+        },
+        {
+            "parameters": {
+                "fromEmail": "arqamsunny18@gmail.com",
+                "toEmail": "arqamsunny18@gmail.com",
+                "subject": "Refund Escalation Alert - Action Required",
+                "html": "=REFUND ESCALATION ALERT\n\nA passenger refund has been stuck in PENDING \nstatus for more than 3 days and requires \nimmediate attention.\n\nPassenger Details:\n  Name:       {{ $('Get Passenger Details').item.json.first_name }} {{ $('Get Passenger Details').item.json.last_name }}\n  Email:      {{ $('Get Passenger Details').item.json.email }}\n\nBooking Details:\n  Booking ID:   {{ $('Get Pending Refunds').item.json.id }}\n  Fare Type:    {{ $('Get Pending Refunds').item.json.fare_type }}\n  Amount Paid:  {{ $('Get Pending Refunds').item.json.price_paid }}\n  Refund Status: {{ $('Get Pending Refunds').item.json.refund_status }}\n  Stuck Since:  {{ $('Get Pending Refunds').item.json.refund_updated_at }}\n\nPlease review and process this refund immediately.",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                656,
+                16
+            ],
+            "id": "cfdd6da3-876c-4beb-bc0c-81c01f4de1bf",
+            "name": "Send an Email",
+            "webhookId": "28b555b2-f0b3-430e-a164-6562b4ba7961",
+            "credentials": {
+                "smtp": {
+                    "id": "tMIJL8UPCSgf2VDj",
+                    "name": "SMTP account"
+                }
+            }
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Every 1 Hour": {
+            "main": [
+                [
+                    {
+                        "node": "Get Pending Refunds",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Pending Refunds": {
+            "main": [
+                [
+                    {
+                        "node": "Get Passenger Details",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Passenger Details": {
+            "main": [
+                [
+                    {
+                        "node": "Send an Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "edbd6b74-e9de-42d3-9c82-6bf6c4ab83de",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "7a20cbd8efb56b83894fbb864c48d3bee502244051bfe287217ad3175807ae83"
+    },
+    "nodeGroups": [],
+    "id": "TEUfstw2F08jtCA8",
+    "tags": []
+}
