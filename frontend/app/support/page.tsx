@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Headphones, Send, Plane, CheckCircle } from 'lucide-react'
+import { Send, Plane, CheckCircle } from 'lucide-react'
 
 export default function SupportPage() {
     const [form, setForm] = useState({
         passenger_id: '',
         question: ''
     })
-    const [passengers, setPassengers] = useState([])
+    const [passengers, setPassengers] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
     const [sent, setSent] = useState(false)
     const [loadingPassengers, setLoadingPassengers] = useState(false)

@@ -5,10 +5,10 @@ import { supabase } from '../../lib/supabase'
 import { Clock, Users, Plane } from 'lucide-react'
 
 export default function WaitlistPage() {
-    const [waitlist, setWaitlist] = useState([])
+    const [waitlist, setWaitlist] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => { fetchWaitlist() }, [])
+
 
     async function fetchWaitlist() {
         const { data } = await supabase
@@ -19,13 +19,15 @@ export default function WaitlistPage() {
         setLoading(false)
     }
 
-    const statusConfig = {
+    useEffect(() => { fetchWaitlist() }, [])
+
+    const statusConfig: Record<string, any> = {
         WAITING: { bg: 'rgba(245,158,11,0.12)', color: '#FCD34D', dot: '#F59E0B' },
         PROMOTED: { bg: 'rgba(16,185,129,0.12)', color: '#6EE7B7', dot: '#10B981' },
         EXPIRED: { bg: 'rgba(239,68,68,0.12)', color: '#FCA5A5', dot: '#EF4444' },
     }
 
-    const fareConfig = {
+    const fareConfig: Record<string, any> = {
         BASIC_ECONOMY: { color: '#93C5FD', bg: 'rgba(59,130,246,0.12)' },
         FLEXIBLE: { color: '#6EE7B7', bg: 'rgba(16,185,129,0.12)' },
         BUSINESS_CLASS: { color: '#FCD34D', bg: 'rgba(252,211,77,0.12)' },

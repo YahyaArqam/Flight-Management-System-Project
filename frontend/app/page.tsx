@@ -1,21 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import { Plane, Users, BookOpen, Clock, TrendingUp, AlertTriangle, ArrowUpRight } from 'lucide-react'
 
 export default function Dashboard() {
+  const router = useRouter()
   const [stats, setStats] = useState({
     flights: 0, passengers: 0, bookings: 0,
     waitlist: 0, revenue: 0, pendingRefunds: 0
   })
-  const [flights, setFlights] = useState([])
+  const [flights, setFlights] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchStats()
-    fetchRecentFlights()
-  }, [])
 
   async function fetchStats() {
     const [
@@ -54,16 +51,21 @@ export default function Dashboard() {
     setFlights(data || [])
   }
 
+  useEffect(() => {
+    fetchStats()
+    fetchRecentFlights()
+  }, [])
+
   const statCards = [
-    { label: 'Total Flights', value: stats.flights, icon: Plane, color: '#3B82F6', glow: 'rgba(59,130,246,0.25)', sub: 'Active routes' },
-    { label: 'Passengers', value: stats.passengers, icon: Users, color: '#10B981', glow: 'rgba(16,185,129,0.25)', sub: 'Registered' },
-    { label: 'Bookings', value: stats.bookings, icon: BookOpen, color: '#06B6D4', glow: 'rgba(6,182,212,0.25)', sub: 'Confirmed' },
-    { label: 'Waitlist', value: stats.waitlist, icon: Clock, color: '#34D399', glow: 'rgba(52,211,153,0.25)', sub: 'Pending seats' },
-    { label: 'Revenue', value: `$${stats.revenue.toFixed(2)}`, icon: TrendingUp, color: '#3B82F6', glow: 'rgba(59,130,246,0.25)', sub: 'Total confirmed' },
-    { label: 'Refunds', value: stats.pendingRefunds, icon: AlertTriangle, color: '#EF4444', glow: 'rgba(239,68,68,0.25)', sub: 'Pending' },
+    { label: 'Total Flights', value: stats.flights, icon: Plane, color: '#3B82F6', glow: 'rgba(59,130,246,0.25)', sub: 'Active routes', route: '/flights' },
+    { label: 'Passengers', value: stats.passengers, icon: Users, color: '#10B981', glow: 'rgba(16,185,129,0.25)', sub: 'Registered', route: '/passengers' },
+    { label: 'Bookings', value: stats.bookings, icon: BookOpen, color: '#06B6D4', glow: 'rgba(6,182,212,0.25)', sub: 'Confirmed', route: '/bookings' },
+    { label: 'Waitlist', value: stats.waitlist, icon: Clock, color: '#34D399', glow: 'rgba(52,211,153,0.25)', sub: 'Pending seats', route: '/waitlist' },
+    { label: 'Revenue', value: `$${stats.revenue.toFixed(2)}`, icon: TrendingUp, color: '#3B82F6', glow: 'rgba(59,130,246,0.25)', sub: 'Total confirmed', route: '/bookings' },
+    { label: 'Refunds', value: stats.pendingRefunds, icon: AlertTriangle, color: '#EF4444', glow: 'rgba(239,68,68,0.25)', sub: 'Pending', route: '/bookings' },
   ]
 
-  const statusConfig = {
+  const statusConfig: Record<string, any> = {
     SCHEDULED: { bg: 'rgba(59,130,246,0.12)', color: '#93C5FD', dot: '#3B82F6' },
     DELAYED: { bg: 'rgba(245,158,11,0.12)', color: '#FCD34D', dot: '#F59E0B' },
     CANCELLED: { bg: 'rgba(239,68,68,0.12)', color: '#FCA5A5', dot: '#EF4444' },
@@ -249,6 +251,7 @@ export default function Dashboard() {
             return (
               <div
                 key={card.label}
+                onClick={() => router.push(card.route)}
                 style={{
                   background: 'rgba(255,255,255,0.04)',
                   backdropFilter: 'blur(20px)',

@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { ScrollText, Plane } from 'lucide-react'
 
 export default function AuditPage() {
-    const [logs, setLogs] = useState([])
+    const [logs, setLogs] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => { fetchLogs() }, [])
@@ -20,7 +20,9 @@ export default function AuditPage() {
         setLoading(false)
     }
 
-    const actionConfig = {
+    useEffect(() => { fetchLogs() }, [])
+
+    const actionConfig: Record<string, any> = {
         FRAUD_DETECTED: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
         HOLD_EXPIRED: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
         RAG_RESPONSE_REJECTED: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
@@ -28,7 +30,7 @@ export default function AuditPage() {
         REFUND_ESCALATED: { color: '#06B6D4', bg: 'rgba(6,182,212,0.12)' },
     }
 
-    function getActionConfig(action) {
+    function getActionConfig(action: string) {
         return actionConfig[action] || { color: '#93C5FD', bg: 'rgba(59,130,246,0.12)' }
     }
 

@@ -14,14 +14,23 @@ const emptyForm = {
     status: 'SCHEDULED'
 }
 
+type FlightForm = typeof emptyForm
+
+type FieldDef = {
+    key: keyof FlightForm
+    label: string
+    placeholder?: string
+    type?: string
+}
+
 export default function FlightsPage() {
-    const [flights, setFlights] = useState([])
+    const [flights, setFlights] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
-    const [editFlight, setEditFlight] = useState(null)
-    const [form, setForm] = useState(emptyForm)
+    const [editFlight, setEditFlight] = useState<any>(null)
+    const [form, setForm] = useState<FlightForm>(emptyForm)
     const [saving, setSaving] = useState(false)
-    const [deleteId, setDeleteId] = useState(null)
+    const [deleteId, setDeleteId] = useState<any>(null)
 
     useEffect(() => { fetchFlights() }, [])
 
@@ -40,7 +49,7 @@ export default function FlightsPage() {
         setShowModal(true)
     }
 
-    function openEdit(flight) {
+    function openEdit(flight: any) {
         setForm({
             flight_number: flight.flight_number,
             origin: flight.origin,
@@ -70,13 +79,13 @@ export default function FlightsPage() {
         fetchFlights()
     }
 
-    async function deleteFlight(id) {
+    async function deleteFlight(id: any) {
         await supabase.from('flights').delete().eq('id', id)
         setDeleteId(null)
         fetchFlights()
     }
 
-    const statusConfig = {
+    const statusConfig: Record<string, any> = {
         SCHEDULED: { bg: 'rgba(59,130,246,0.12)', color: '#93C5FD', dot: '#3B82F6' },
         DELAYED: { bg: 'rgba(245,158,11,0.12)', color: '#FCD34D', dot: '#F59E0B' },
         CANCELLED: { bg: 'rgba(239,68,68,0.12)', color: '#FCA5A5', dot: '#EF4444' },
@@ -364,14 +373,14 @@ export default function FlightsPage() {
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            {[
+                            {([
                                 { key: 'flight_number', label: 'Flight Number', placeholder: 'SK101' },
                                 { key: 'total_capacity', label: 'Total Capacity', placeholder: '180', type: 'number' },
                                 { key: 'origin', label: 'Origin', placeholder: 'NYC' },
                                 { key: 'destination', label: 'Destination', placeholder: 'LAX' },
                                 { key: 'departure_time', label: 'Departure Time', type: 'datetime-local' },
                                 { key: 'arrival_time', label: 'Arrival Time', type: 'datetime-local' },
-                            ].map(field => (
+                            ] as FieldDef[]).map(field => (
                                 <div key={field.key}>
                                     <label style={labelStyle}>{field.label}</label>
                                     <input

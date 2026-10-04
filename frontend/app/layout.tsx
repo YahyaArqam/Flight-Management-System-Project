@@ -12,7 +12,7 @@ export const metadata = {
   description: 'Professional Flight Operations Dashboard',
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
       <body className={inter.className} style={{
